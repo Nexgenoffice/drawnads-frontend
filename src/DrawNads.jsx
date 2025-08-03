@@ -21,6 +21,7 @@ const DrawNads = () => {
     maxPlayers: 16,
     minPlayers: 2
   });
+  const [gameRooms, setGameRooms] = useState({});
   
   const canvasRef = useRef(null);
   const contextRef = useRef(null);
@@ -29,19 +30,27 @@ const DrawNads = () => {
   const words = ['printer', 'bicycle', 'spoon', 'ball', 'soap', 'sofa', 'camera', 'television', 'glasses', 'radio', 'blanket', 'chair', 'furniture', 'fridge', 'suitcase', 'computer', 'watch', 'pillow', 'towel', 'scissors', 'bottle', 'shelf', 'brush', 'table', 'pot', 'knife', 'house', 'bucket', 'plate', 'car', 'box', 'ladder', 'shoe', 'wardrobe', 'mattress', 'carpet', 'bag', 'truck', 'lamp', 'mobile phone', 'curtain', 'key', 'pen', 'pan', 'broom', 'book', 'bed', 'fork', 'glass', 'microwave'];
 
   // Configuration du canvas
-  useEffect(() => {
+    useEffect(() => {
     if (canvasRef.current && currentScreen === 'game') {
-      const canvas = canvasRef.current;
-      canvas.width = 600;
-      canvas.height = 400;
-      
-      const context = canvas.getContext('2d');
-      context.lineCap = 'round';
-      context.strokeStyle = brushColor;
-      context.lineWidth = brushSize;
-      contextRef.current = context;
+        const canvas = canvasRef.current;
+        canvas.width = 600;
+        canvas.height = 400;
+        
+        const context = canvas.getContext('2d');
+        context.lineCap = 'round';
+        context.strokeStyle = brushColor;
+        context.lineWidth = brushSize;
+        contextRef.current = context;
     }
-  }, [currentScreen, brushColor, brushSize]);
+    }, [currentScreen]); // Enlever brushColor et brushSize des dépendances
+
+    // Ajouter un useEffect séparé pour les changements de couleur/taille
+    useEffect(() => {
+    if (contextRef.current) {
+        contextRef.current.strokeStyle = brushColor;
+        contextRef.current.lineWidth = brushSize;
+    }
+    }, [brushColor, brushSize]);
 
   // Timer pour le jeu
   useEffect(() => {
@@ -49,10 +58,28 @@ const DrawNads = () => {
     if (gameState === 'drawing' || gameState === 'voting') {
       timer = setInterval(() => {
         setTimeLeft(prev => {
-          if (prev <= 1) {
+            if (prev <= 1) {
             if (gameState === 'drawing') {
-              setGameState('voting');
-              return gameSettings.voteTime;
+                // Sauvegarder le dessin actuel seulement s'il n'existe pas déjà
+                if (canvasRef.current) {
+                const canvas = canvasRef.current;
+                const imageData = canvas.toDataURL();
+                setDrawings(prevDrawings => {
+                    // Vérifier si le dessin du joueur existe déjà
+                    const playerDrawingExists = prevDrawings.some(drawing => drawing.player === playerName);
+                    if (!playerDrawingExists) {
+                    return [...prevDrawings, { 
+                        id: Date.now(), 
+                        player: playerName, 
+                        imageData: imageData,
+                        votes: 0
+                    }];
+                    }
+                    return prevDrawings;
+                });
+                }
+                setGameState('voting');
+                return gameSettings.voteTime;
             } else {
               setGameState('results');
               return 0;
@@ -63,21 +90,33 @@ const DrawNads = () => {
       }, 1000);
     }
     return () => clearInterval(timer);
-  }, [gameState, gameSettings]);
+  }, [gameState, gameSettings, playerName]);
 
-  // Fonctions de dessin
+  // Fonctions de dessin améliorées
+  const getCanvasCoordinates = (e) => {
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
+    return {
+      x: (e.clientX - rect.left) * scaleX,
+      y: (e.clientY - rect.top) * scaleY
+    };
+  };
+
   const startDrawing = (e) => {
     if (gameState !== 'drawing') return;
     setIsDrawing(true);
-    const rect = canvasRef.current.getBoundingClientRect();
+    const coords = getCanvasCoordinates(e);
     contextRef.current.beginPath();
-    contextRef.current.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+    contextRef.current.moveTo(coords.x, coords.y);
   };
 
   const draw = (e) => {
     if (!isDrawing || gameState !== 'drawing') return;
-    const rect = canvasRef.current.getBoundingClientRect();
-    contextRef.current.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+    const coords = getCanvasCoordinates(e);
+    contextRef.current.lineTo(coords.x, coords.y);
     contextRef.current.stroke();
   };
 
@@ -95,29 +134,72 @@ const DrawNads = () => {
     }
   };
 
-  // Simuler la création d'une room
+
+  // Simuler la création d'une room avec stockage global
   const createRoom = () => {
     const newRoomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const hostPlayer = { id: Date.now(), name: playerName, isHost: true };
+    
+    // Créer la room dans le stockage global
+    setGameRooms(prev => ({
+      ...prev,
+      [newRoomCode]: {
+        code: newRoomCode,
+        players: [hostPlayer],
+        host: hostPlayer.id,
+        gameState: 'waiting'
+      }
+    }));
+    
     setRoomCode(newRoomCode);
     setIsHost(true);
-    setPlayers([{ id: Date.now(), name: playerName, isHost: true }]);
+    setPlayers([hostPlayer]);
     setCurrentScreen('lobby');
   };
 
-  // Rejoindre une room
+
+  // Rejoindre une room existante
   const joinRoom = () => {
     if (roomCode && playerName) {
-      // Simuler l'ajout du joueur à une room existante
-      const newPlayer = { id: Date.now(), name: playerName, isHost: false };
+      const room = gameRooms[roomCode];
       
-      // Générer quelques joueurs fictifs pour la démo (incluant l'hôte)
-      const existingPlayers = [
-        { id: 1, name: 'Host Player', isHost: true }
-      ];
-      
-      setPlayers([...existingPlayers, newPlayer]);
-      setIsHost(false);
-      setCurrentScreen('lobby');
+      if (room) {
+        // Rejoindre une room existante
+        const newPlayer = { id: Date.now(), name: playerName, isHost: false };
+        const updatedPlayers = [...room.players, newPlayer];
+        
+        // Mettre à jour la room
+        setGameRooms(prev => ({
+          ...prev,
+          [roomCode]: {
+            ...room,
+            players: updatedPlayers
+          }
+        }));
+        
+        setPlayers(updatedPlayers);
+        setIsHost(false);
+        setCurrentScreen('lobby');
+      } else {
+        // Simuler l'existence d'une room pour la démo
+        const hostPlayer = { id: 1, name: 'Host Player', isHost: true };
+        const newPlayer = { id: Date.now(), name: playerName, isHost: false };
+        const simulatedPlayers = [hostPlayer, newPlayer];
+        
+        setGameRooms(prev => ({
+          ...prev,
+          [roomCode]: {
+            code: roomCode,
+            players: simulatedPlayers,
+            host: hostPlayer.id,
+            gameState: 'waiting'
+          }
+        }));
+        
+        setPlayers(simulatedPlayers);
+        setIsHost(false);
+        setCurrentScreen('lobby');
+      }
     }
   };
 
@@ -135,7 +217,20 @@ const DrawNads = () => {
           isHost: false,
           isBot: true 
         };
-        setPlayers(prev => [...prev, newBot]);
+        
+        const updatedPlayers = [...players, newBot];
+        setPlayers(updatedPlayers);
+        
+        // Mettre à jour la room globale
+        if (gameRooms[roomCode]) {
+          setGameRooms(prev => ({
+            ...prev,
+            [roomCode]: {
+              ...prev[roomCode],
+              players: updatedPlayers
+            }
+          }));
+        }
       }
     }
   };
@@ -143,9 +238,22 @@ const DrawNads = () => {
   // Retirer un joueur
   const removePlayer = (playerId) => {
     if (isHost) {
-      setPlayers(prev => prev.filter(p => p.id !== playerId));
+      const updatedPlayers = players.filter(p => p.id !== playerId);
+      setPlayers(updatedPlayers);
+      
+      // Mettre à jour la room globale
+      if (gameRooms[roomCode]) {
+        setGameRooms(prev => ({
+          ...prev,
+          [roomCode]: {
+            ...prev[roomCode],
+            players: updatedPlayers
+          }
+        }));
+      }
     }
   };
+
 
   // Démarrer le jeu
   const startGame = () => {
@@ -153,14 +261,70 @@ const DrawNads = () => {
     setCurrentWord(randomWord);
     setGameState('drawing');
     setTimeLeft(gameSettings.drawTime);
+    setDrawings([]); // Reset des dessins
+    setVotes({}); // Reset des votes
     setCurrentScreen('game');
+    
+    // Générer des dessins fictifs pour les bots
+    setTimeout(() => {
+      const botDrawings = players
+        .filter(p => p.isBot)
+        .map(bot => ({
+          id: Date.now() + Math.random(),
+          player: bot.name,
+          imageData: generateBotDrawing(),
+          votes: 0
+        }));
+      
+      setDrawings(prev => [...prev, ...botDrawings]);
+    }, 1000);
   };
+
+    // Générer un dessin fictif pour les bots
+  const generateBotDrawing = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 600;
+    canvas.height = 400;
+    const ctx = canvas.getContext('2d');
+    
+    // Dessiner quelque chose de simple
+    ctx.fillStyle = '#' + Math.floor(Math.random()*16777215).toString(16);
+    ctx.fillRect(50, 50, 100, 100);
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(50, 50, 100, 100);
+    
+    // Ajouter du texte
+    ctx.fillStyle = '#000';
+    ctx.font = '20px Arial';
+    ctx.fillText('Bot Drawing', 200, 100);
+    
+    return canvas.toDataURL();
+  };
+
 
   // Voter pour un dessin
   const voteForDrawing = (drawingId) => {
-    if (gameState === 'voting') {
+    if (gameState === 'voting' && !votes[playerName]) {
       setVotes(prev => ({ ...prev, [playerName]: drawingId }));
+      
+      // Mettre à jour le nombre de votes du dessin
+      setDrawings(prev => prev.map(drawing => 
+        drawing.id === drawingId 
+          ? { ...drawing, votes: drawing.votes + 1 }
+          : drawing
+      ));
     }
+  };
+
+  // Calculer le gagnant
+  const getWinner = () => {
+    if (drawings.length === 0) return null;
+    
+    const sortedDrawings = [...drawings].sort((a, b) => b.votes - a.votes);
+    const winner = sortedDrawings[0];
+    
+    return winner.votes > 0 ? winner : null;
   };
 
   // Menu principal
@@ -470,42 +634,59 @@ const DrawNads = () => {
 
           {gameState === 'voting' && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {/* Simuler quelques dessins pour le vote */}
-              {[1, 2, 3].map(drawingId => (
-                <div key={drawingId} className={`vote-card bg-white rounded-2xl p-4 border-2 ${votes[playerName] === drawingId ? 'voted' : 'border-purple-200'}`}>
-                  <div className="bg-gray-100 h-48 rounded-xl mb-4 flex items-center justify-center text-gray-500">
-                    Drawing {drawingId}
-                  </div>
-                  <button
-                    onClick={() => voteForDrawing(drawingId)}
-                    disabled={votes[playerName]}
+                {drawings.map(drawing => (
+                <div key={drawing.id} className={`vote-card bg-white rounded-2xl p-4 border-2 ${votes[playerName] === drawing.id ? 'voted' : 'border-purple-200'}`}>
+                    <img 
+                    src={drawing.imageData} 
+                    alt={`Drawing by ${drawing.player}`}
+                    className="w-full h-48 rounded-xl mb-4 object-contain bg-gray-50"
+                    />
+                    <p className="text-center text-sm text-purple-600 mb-2">By: {drawing.player}</p>
+                    <button
+                    onClick={() => voteForDrawing(drawing.id)}
+                    disabled={votes[playerName] || drawing.player === playerName}
                     className="w-full bg-purple-500 hover:bg-purple-600 disabled:opacity-50 text-white p-2 rounded-xl transition-colors flex items-center justify-center gap-2"
-                  >
+                    >
                     <Vote className="w-4 h-4" />
-                    {votes[playerName] === drawingId ? 'Voted!' : 'Vote'}
-                  </button>
+                    {votes[playerName] === drawing.id ? 'Voted!' : (drawing.player === playerName ? "Can't vote for yourself" : 'Vote')}
+                    </button>
                 </div>
-              ))}
+                ))}
             </div>
-          )}
+            )}
 
           {gameState === 'results' && (
             <div className="text-center">
-              <Trophy className="w-16 h-16 text-yellow-500 mx-auto mb-4 bounce-animation" />
-              <h2 className="text-2xl font-bold text-purple-800 mb-4">Results!</h2>
-              <p className="text-purple-600 mb-6">Winner will be announced soon...</p>
-              <button
+                <Trophy className="w-16 h-16 text-yellow-500 mx-auto mb-4 bounce-animation" />
+                <h2 className="text-2xl font-bold text-purple-800 mb-4">Results!</h2>
+                {(() => {
+                const winner = getWinner();
+                return winner ? (
+                    <div className="mb-6">
+                    <p className="text-xl font-semibold text-purple-800 mb-2">🎉 Winner: {winner.player}!</p>
+                    <p className="text-purple-600 mb-4">with {winner.votes} vote{winner.votes !== 1 ? 's' : ''}</p>
+                    <img 
+                        src={winner.imageData} 
+                        alt="Winning drawing"
+                        className="w-64 h-40 mx-auto rounded-xl border-4 border-yellow-400 object-contain bg-white"
+                    />
+                    </div>
+                ) : (
+                    <p className="text-purple-600 mb-6">No winner this round - no votes were cast!</p>
+                );
+                })()}
+                <button
                 onClick={() => {
-                  setCurrentScreen('lobby');
-                  setGameState('waiting');
-                  setVotes({});
+                    setCurrentScreen('lobby');
+                    setGameState('waiting');
+                    setVotes({});
                 }}
                 className="btn-primary bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl font-semibold transition-colors"
-              >
+                >
                 Return to lobby
-              </button>
+                </button>
             </div>
-          )}
+            )}
         </div>
       </div>
     </div>
