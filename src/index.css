@@ -76,12 +76,12 @@ body::before {
   text-align: center;
 }
 
-/* Styles pour la fenêtre d'accueil agrandie */
+/* Styles pour la fenêtre d'accueil agrandie - Taille augmentée */
 .welcome-container {
-  min-width: 90vw;
-  max-width: 1200px;
-  min-height: 80vh;
-  padding: 3rem;
+  min-width: 95vw;
+  max-width: 1400px;
+  min-height: 90vh;
+  padding: 4rem;
   background: rgba(255, 255, 255, 0.15);
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -89,6 +89,10 @@ body::before {
   box-shadow: 
     0 20px 60px rgba(107, 70, 193, 0.3),
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 
 /* Styles pour les gros boutons */
@@ -145,7 +149,7 @@ body::before {
   opacity: 0.6;
 }
 
-/* Styles pour la palette de dessin agrandie */
+/* Styles pour la palette de dessin agrandie et centrée */
 .drawing-palette {
   display: flex;
   flex-wrap: wrap;
@@ -157,8 +161,9 @@ body::before {
   backdrop-filter: blur(15px);
   border-radius: 20px;
   border: 1px solid rgba(255, 255, 255, 0.15);
-  margin: 2rem 0;
-  min-width: 600px;
+  margin: 2rem auto;
+  min-width: 700px;
+  width: fit-content;
 }
 
 .big-color-picker {
@@ -197,19 +202,27 @@ body::before {
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
 }
 
-/* Styles pour le canvas de dessin agrandi */
+/* Styles pour le canvas de dessin agrandi et centré */
 .big-drawing-canvas {
-  min-width: 600px;
-  min-height: 400px;
-  box-shadow: 
-    inset 0 4px 16px rgba(0, 0, 0, 0.1),
-    0 8px 30px rgba(107, 70, 193, 0.2);
-  transition: all 0.3s ease;
-  background: 
-    radial-gradient(circle at 25px 25px, rgba(107, 70, 193, 0.03) 2px, transparent 2px);
-  background-size: 25px 25px;
-  border: 3px dashed rgba(107, 70, 193, 0.3) !important;
-  border-radius: 16px;
+  min-width: 1200px;
+  min-height: 800px;
+  /* ... autres propriétés ... */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.big-drawing-canvas::before {
+  content: '🎨';
+  font-size: 8rem;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0.3;
+  pointer-events: none;
+  z-index: 1;
 }
 
 .big-drawing-canvas:hover {
@@ -239,7 +252,8 @@ body::before {
   outline: none;
   transition: all 0.3s ease;
   cursor: pointer;
-  margin: 1rem 0;
+  margin: 1rem auto;
+  display: block;
 }
 
 .big-brush-size-slider:hover {
@@ -280,8 +294,8 @@ body::before {
 
 /* Titre principal agrandi */
 .main-title {
-  font-size: 4rem;
-  font-weight: 800;
+  font-size: 5rem;
+  font-weight: 900;
   background: linear-gradient(135deg, var(--purple-primary), var(--purple-secondary), var(--gold));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -293,10 +307,10 @@ body::before {
 
 /* Sous-titre agrandi */
 .subtitle {
-  font-size: 1.5rem;
+  font-size: 2rem;
   color: rgba(255, 255, 255, 0.9);
   margin-bottom: 3rem;
-  font-weight: 300;
+  font-weight: 400;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
@@ -308,6 +322,16 @@ body::before {
   justify-content: center;
   align-items: center;
   margin: 3rem 0;
+}
+
+/* Zone de dessin centrée dans le conteneur */
+.drawing-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 2rem;
 }
 
 /* Animations personnalisées */
@@ -456,9 +480,7 @@ body::before {
     inset 0 2px 8px rgba(0, 0, 0, 0.05),
     0 4px 12px rgba(107, 70, 193, 0.1);
   transition: all 0.3s ease;
-  background: 
-    radial-gradient(circle at 20px 20px, rgba(107, 70, 193, 0.02) 1px, transparent 1px);
-  background-size: 20px 20px;
+  background: white;
   border: 2px dashed rgba(107, 70, 193, 0.2) !important;
 }
 
@@ -495,35 +517,6 @@ body::before {
 
 .custom-input:hover {
   border-color: rgba(107, 70, 193, 0.4) !important;
-}
-
-/* Gradient backgrounds personnalisés */
-.bg-gradient-purple {
-  background: linear-gradient(135deg, 
-    #E879F9 0%, 
-    #A78BFA 25%, 
-    #8B5CF6 50%, 
-    #7C3AED 75%, 
-    #6B46C1 100%);
-  position: relative;
-}
-
-.bg-gradient-purple::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: 
-    radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
-    radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.15) 0%, transparent 50%),
-    radial-gradient(circle at 40% 40%, rgba(139, 92, 246, 0.2) 0%, transparent 50%);
-  pointer-events: none;
-}
-
-.bg-gradient-purple-dark {
-  background: linear-gradient(135deg, var(--purple-primary) 0%, var(--purple-dark) 100%);
 }
 
 /* Styles pour les couleurs de pinceau améliorés */
@@ -741,8 +734,8 @@ body::before {
 /* Responsive improvements avec micro-interactions */
 @media (max-width: 1200px) {
   .welcome-container {
-    min-width: 95vw;
-    padding: 2rem;
+    min-width: 98vw;
+    padding: 3rem;
   }
   
   .main-title {
@@ -756,20 +749,23 @@ body::before {
   }
   
   .drawing-palette {
-    min-width: 500px;
+    min-width: 1000px;
+    gap: 1.5rem;
+    padding: 2.5rem;
   }
   
   .big-drawing-canvas {
-    min-width: 500px;
-    min-height: 350px;
+    min-width: 600px;
+    min-height: 450px;
   }
 }
 
 @media (max-width: 768px) {
   .welcome-container {
-    min-width: 98vw;
-    min-height: 95vh;
-    padding: 1.5rem;
+    min-width: 100vw;
+    min-height: 100vh;
+    padding: 2rem;
+    border-radius: 0;
   }
   
   .main-title {
@@ -793,7 +789,7 @@ body::before {
   }
   
   .drawing-palette {
-    min-width: 400px;
+    min-width: 90vw;
     gap: 0.75rem;
   }
   
@@ -803,8 +799,8 @@ body::before {
   }
   
   .big-drawing-canvas {
-    min-width: 400px;
-    min-height: 300px;
+    min-width: 90vw;
+    min-height: 350px;
   }
   
   .big-brush-size-slider {
@@ -814,7 +810,7 @@ body::before {
   .drawing-canvas {
     max-width: 100%;
     height: auto;
-    touch-action: none; /* Améliore l'expérience tactile */
+    touch-action: none;
   }
   
   .glass-card {
@@ -826,25 +822,22 @@ body::before {
   .btn-primary {
     padding: 0.875rem 1.5rem;
     font-size: 1rem;
-    min-height: 50px; /* Meilleure accessibilité tactile */
+    min-height: 50px;
   }
   
   .color-picker {
     width: 36px;
-    height: 36px; /* Plus gros pour mobile */
+    height: 36px;
   }
   
   .player-card:hover {
-    transform: scale(1.02); /* Moins de mouvement sur mobile */
+    transform: scale(1.02);
   }
 }
 
 @media (max-width: 480px) {
   .welcome-container {
-    min-width: 100vw;
-    min-height: 100vh;
     padding: 1rem;
-    border-radius: 0;
   }
   
   .main-title {
@@ -863,7 +856,7 @@ body::before {
   }
   
   .drawing-palette {
-    min-width: 320px;
+    min-width: 95vw;
     gap: 0.5rem;
     padding: 1.5rem;
   }
@@ -874,8 +867,8 @@ body::before {
   }
   
   .big-drawing-canvas {
-    min-width: 300px;
-    min-height: 250px;
+    min-width: 95vw;
+    min-height: 300px;
   }
   
   .big-brush-size-slider {
@@ -1068,16 +1061,6 @@ input:focus-visible {
 }
 
 /* Styles pour les états de chargement améliorés */
-.loading-spinner {
-  width: 48px;
-  height: 48px;
-  border: 4px solid rgba(107, 70, 193, 0.1);
-  border-left: 4px solid var(--purple-primary);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin: 0 auto;
-}
-
 .loading-dots {
   display: flex;
   gap: 4px;
@@ -1123,29 +1106,6 @@ input:focus-visible {
 }
 
 /* Styles pour les tooltips améliorés */
-.tooltip {
-  position: relative;
-}
-
-.tooltip::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  bottom: calc(100% + 8px);
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(0, 0, 0, 0.9);
-  color: white;
-  padding: 0.5rem 0.75rem;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  white-space: nowrap;
-  opacity: 0;
-  pointer-events: none;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 1000;
-  backdrop-filter: blur(8px);
-}
-
 .tooltip::before {
   content: '';
   position: absolute;
@@ -1160,7 +1120,6 @@ input:focus-visible {
   z-index: 1000;
 }
 
-.tooltip:hover::after,
 .tooltip:hover::before {
   opacity: 1;
 }
