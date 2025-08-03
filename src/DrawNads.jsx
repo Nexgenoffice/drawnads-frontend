@@ -5,7 +5,7 @@ const DrawNads = () => {
   const [currentScreen, setCurrentScreen] = useState('menu');
   const [roomCode, setRoomCode] = useState('');
   const [playerName, setPlayerName] = useState('');
-  const [gameState, setGameState] = useState('waiting'); // waiting, drawing, voting, results
+  const [gameState, setGameState] = useState('waiting'); 
   const [timeLeft, setTimeLeft] = useState(30);
   const [currentWord, setCurrentWord] = useState('');
   const [players, setPlayers] = useState([]);
