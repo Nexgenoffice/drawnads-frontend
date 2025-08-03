@@ -15,6 +15,7 @@ const DrawNads = () => {
   const [brushColor, setBrushColor] = useState('#6B46C1');
   const [brushSize, setBrushSize] = useState(3);
   const [isHost, setIsHost] = useState(false);
+  const [externalPlayers, setExternalPlayers] = useState({});
   const [gameSettings, setGameSettings] = useState({
     drawTime: 30,
     voteTime: 45,
@@ -159,49 +160,87 @@ const DrawNads = () => {
 
 
   // Rejoindre une room existante
-  const joinRoom = () => {
+    const joinRoom = () => {
     if (roomCode && playerName) {
-      const room = gameRooms[roomCode];
-      
-      if (room) {
+        const room = gameRooms[roomCode];
+        
+        if (room) {
         // Rejoindre une room existante
         const newPlayer = { id: Date.now(), name: playerName, isHost: false };
         const updatedPlayers = [...room.players, newPlayer];
         
-        // Mettre à jour la room
         setGameRooms(prev => ({
-          ...prev,
-          [roomCode]: {
+            ...prev,
+            [roomCode]: {
             ...room,
             players: updatedPlayers
-          }
+            }
         }));
         
         setPlayers(updatedPlayers);
         setIsHost(false);
         setCurrentScreen('lobby');
-      } else {
+        } else {
         // Simuler l'existence d'une room pour la démo
         const hostPlayer = { id: 1, name: 'Host Player', isHost: true };
         const newPlayer = { id: Date.now(), name: playerName, isHost: false };
+        
+        // Simuler des joueurs externes qui peuvent rejoindre
+        const potentialExternalPlayers = [
+            { id: Date.now() + 1, name: 'Player1', isHost: false },
+            { id: Date.now() + 2, name: 'Player2', isHost: false },
+            { id: Date.now() + 3, name: 'GamerX', isHost: false }
+        ];
+        
+        setExternalPlayers(prev => ({
+            ...prev,
+            [roomCode]: potentialExternalPlayers
+        }));
+        
         const simulatedPlayers = [hostPlayer, newPlayer];
         
         setGameRooms(prev => ({
-          ...prev,
-          [roomCode]: {
+            ...prev,
+            [roomCode]: {
             code: roomCode,
             players: simulatedPlayers,
             host: hostPlayer.id,
             gameState: 'waiting'
-          }
+            }
         }));
         
         setPlayers(simulatedPlayers);
         setIsHost(false);
         setCurrentScreen('lobby');
-      }
+        }
     }
-  };
+    };
+
+    const refreshRoom = () => {
+    if (roomCode && externalPlayers[roomCode]) {
+        // Simuler l'arrivée aléatoire de joueurs
+        const availableExternalPlayers = externalPlayers[roomCode].filter(
+        extPlayer => !players.some(p => p.id === extPlayer.id)
+        );
+        
+        if (availableExternalPlayers.length > 0 && Math.random() > 0.3) {
+        const randomPlayer = availableExternalPlayers[Math.floor(Math.random() * availableExternalPlayers.length)];
+        const updatedPlayers = [...players, randomPlayer];
+        
+        setPlayers(updatedPlayers);
+        
+        if (gameRooms[roomCode]) {
+            setGameRooms(prev => ({
+            ...prev,
+            [roomCode]: {
+                ...prev[roomCode],
+                players: updatedPlayers
+            }
+            }));
+        }
+        }
+    }
+    };
 
   // Ajouter un joueur fictif (pour tester)
   const addBotPlayer = () => {
@@ -450,6 +489,17 @@ const DrawNads = () => {
             <h2 className="text-2xl font-bold text-purple-800 mb-2">Room: {roomCode}</h2>
             <p className="text-purple-600">Share this code with your friends!</p>
           </div>
+
+        <div className="text-center mb-6">
+    <h2 className="text-2xl font-bold text-purple-800 mb-2">Room: {roomCode}</h2>
+    <p className="text-purple-600">Share this code with your friends!</p>
+    <button
+        onClick={refreshRoom}
+        className="mt-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl text-sm transition-colors"
+    >
+        🔄 Refresh Room
+    </button>
+    </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="bg-purple-50 rounded-2xl p-6">
