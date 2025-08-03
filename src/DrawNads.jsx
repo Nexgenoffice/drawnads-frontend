@@ -45,6 +45,17 @@ const DrawNads = () => {
     }
     }, [currentScreen]); // Enlever brushColor et brushSize des dépendances
 
+    // Auto-refresh pour simuler l'arrivée de joueurs
+    useEffect(() => {
+        let interval;
+        if (currentScreen === 'lobby' && gameState === 'waiting') {
+        interval = setInterval(() => {
+        refreshRoom();
+        }, 5000); // Essaie d'ajouter un joueur toutes les 5 secondes
+  }
+  return () => clearInterval(interval);
+}, [currentScreen, gameState, roomCode, players, externalPlayers]);
+
     // Ajouter un useEffect séparé pour les changements de couleur/taille
     useEffect(() => {
     if (contextRef.current) {
@@ -137,26 +148,39 @@ const DrawNads = () => {
 
 
   // Simuler la création d'une room avec stockage global
-  const createRoom = () => {
-    const newRoomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-    const hostPlayer = { id: Date.now(), name: playerName, isHost: true };
-    
-    // Créer la room dans le stockage global
-    setGameRooms(prev => ({
-      ...prev,
-      [newRoomCode]: {
-        code: newRoomCode,
-        players: [hostPlayer],
-        host: hostPlayer.id,
-        gameState: 'waiting'
-      }
-    }));
-    
-    setRoomCode(newRoomCode);
-    setIsHost(true);
-    setPlayers([hostPlayer]);
-    setCurrentScreen('lobby');
-  };
+        const createRoom = () => {
+        const newRoomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+        const hostPlayer = { id: Date.now(), name: playerName, isHost: true };
+        
+        // Créer des joueurs externes potentiels pour l'host aussi
+        const potentialExternalPlayers = [
+            { id: Date.now() + 1, name: 'Alice', isHost: false },
+            { id: Date.now() + 2, name: 'Bob', isHost: false },
+            { id: Date.now() + 3, name: 'Charlie', isHost: false },
+            { id: Date.now() + 4, name: 'Diana', isHost: false }
+        ];
+        
+        setExternalPlayers(prev => ({
+            ...prev,
+            [newRoomCode]: potentialExternalPlayers
+        }));
+        
+        // Créer la room dans le stockage global
+        setGameRooms(prev => ({
+            ...prev,
+            [newRoomCode]: {
+            code: newRoomCode,
+            players: [hostPlayer],
+            host: hostPlayer.id,
+            gameState: 'waiting'
+            }
+        }));
+        
+        setRoomCode(newRoomCode);
+        setIsHost(true);
+        setPlayers([hostPlayer]);
+        setCurrentScreen('lobby');
+        };
 
 
   // Rejoindre une room existante
@@ -216,31 +240,34 @@ const DrawNads = () => {
     }
     };
 
-    const refreshRoom = () => {
-    if (roomCode && externalPlayers[roomCode]) {
-        // Simuler l'arrivée aléatoire de joueurs
-        const availableExternalPlayers = externalPlayers[roomCode].filter(
-        extPlayer => !players.some(p => p.id === extPlayer.id)
-        );
-        
-        if (availableExternalPlayers.length > 0 && Math.random() > 0.3) {
-        const randomPlayer = availableExternalPlayers[Math.floor(Math.random() * availableExternalPlayers.length)];
-        const updatedPlayers = [...players, randomPlayer];
-        
-        setPlayers(updatedPlayers);
-        
-        if (gameRooms[roomCode]) {
-            setGameRooms(prev => ({
-            ...prev,
-            [roomCode]: {
-                ...prev[roomCode],
-                players: updatedPlayers
+        const refreshRoom = () => {
+        if (roomCode && externalPlayers[roomCode]) {
+            // Simuler l'arrivée aléatoire de joueurs
+            const availableExternalPlayers = externalPlayers[roomCode].filter(
+            extPlayer => !players.some(p => p.id === extPlayer.id)
+            );
+            
+            if (availableExternalPlayers.length > 0) {
+            // Plus de chance qu'un joueur arrive (70% au lieu de 70% de ne pas arriver)
+            if (Math.random() > 0.4) {
+                const randomPlayer = availableExternalPlayers[Math.floor(Math.random() * availableExternalPlayers.length)];
+                const updatedPlayers = [...players, randomPlayer];
+                
+                setPlayers(updatedPlayers);
+                
+                if (gameRooms[roomCode]) {
+                setGameRooms(prev => ({
+                    ...prev,
+                    [roomCode]: {
+                    ...prev[roomCode],
+                    players: updatedPlayers
+                    }
+                }));
+                }
             }
-            }));
+            }
         }
-        }
-    }
-    };
+        };
 
   // Ajouter un joueur fictif (pour tester)
   const addBotPlayer = () => {
